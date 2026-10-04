@@ -77,20 +77,26 @@ export function RecordSaleModal({ open, onClose, products, onSaleRecorded }: Rec
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ productId: parseInt(productId), quantity: qty }),
       })
-      const data = await res.json()
+      
+      let data: any = null
+      try {
+        data = await res.json()
+      } catch {
+        // Response was not JSON (e.g. server crash or HTML error page)
+      }
 
       if (!res.ok) {
-        setError(data.error || 'Failed to record sale.')
+        setError(data?.error || `Server error (${res.status}). Please check server logs or refresh.`)
         return
       }
 
       setSuccess({
         message: `Sold ${qty} ${selectedProduct?.unit} of "${selectedProduct?.name}" for ${formatCurrency(estimatedTotal)}`,
-        lowStockMessage: data.lowStockMessage,
+        lowStockMessage: data?.lowStockMessage,
       })
       onSaleRecorded()
-    } catch {
-      setError('Network error. Please try again.')
+    } catch (err: any) {
+      setError(err?.message ? `Network error: ${err.message}` : 'Network error. Please make sure the local server is running.')
     } finally {
       setLoading(false)
     }
